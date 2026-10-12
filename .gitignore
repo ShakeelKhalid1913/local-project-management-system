@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+*.spec
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local SQLite / database files
+data/
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.db3
+*.s3db
+*.db-journal
+*.db-wal
+*.db-shm
+pms.db
+
+# Built launchers
+PMS.exe
+*.exe
+
+# Logs / OS / editors
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Env / secrets
+.env
+.env.*

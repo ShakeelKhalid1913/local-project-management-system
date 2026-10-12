@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PMS</title>
+  <link rel="icon" href="{{ url_for('static', filename='favicon.svg') }}" type="image/svg+xml" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            ink: "rgb(var(--ink) / <alpha-value>)",
+            mute: "rgb(var(--mute) / <alpha-value>)",
+            line: "rgb(var(--line) / <alpha-value>)",
+            soft: "rgb(var(--soft) / <alpha-value>)",
+            panel: "rgb(var(--panel) / <alpha-value>)",
+            brand: {
+              DEFAULT: "rgb(var(--brand) / <alpha-value>)",
+              deep: "rgb(var(--brand-deep) / <alpha-value>)",
+            },
+            signal: "rgb(var(--signal) / <alpha-value>)",
+            warn: "rgb(var(--warn) / <alpha-value>)",
+            ok: "rgb(var(--ok) / <alpha-value>)",
+          },
+          fontFamily: {
+            sans: ['"IBM Plex Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+            mono: ['"JetBrains Mono"', "ui-monospace", "monospace"],
+          },
+        },
+      },
+    };
+  </script>
+  <script>
+    try {
+      if (localStorage.getItem("pms-theme") === "dark") {
+        document.documentElement.classList.add("dark");
+      }
+    } catch (_) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: 10 10 10;
+      --mute: 82 82 82;
+      --line: 229 229 229;
+      --soft: 244 244 245;
+      --panel: 255 255 255;
+      --bg: 244 244 245;
+      --grid: 229 229 229;
+      --brand: 10 10 10;
+      --brand-deep: 0 0 0;
+      --brand-hover: 38 38 38;
+      --signal: 0 87 255;
+      --warn: 194 65 12;
+      --ok: 22 101 52;
+      --todo: 154 52 18;
+      --selection: 238 243 255;
+      --kbd-bg: 250 250 250;
+      --kbd-border: 212 212 212;
+      --field-bg: 255 255 255;
+      --backdrop: 0 0 0;
+    }
+
+    html.dark {
+      color-scheme: dark;
+      --ink: 245 245 245;
+      --mute: 163 163 163;
+      --line: 42 42 42;
+      --soft: 23 23 23;
+      --panel: 17 17 17;
+      --bg: 10 10 10;
+      --grid: 31 31 31;
+      --brand: 245 245 245;
+      --brand-deep: 255 255 255;
+      --brand-hover: 229 229 229;
+      --signal: 77 140 255;
+      --warn: 251 146 60;
+      --ok: 74 222 128;
+      --todo: 251 146 60;
+      --selection: 20 30 55;
+      --kbd-bg: 23 23 23;
+      --kbd-border: 64 64 64;
+      --field-bg: 17 17 17;
+      --backdrop: 0 0 0;
+    }
+
+    * { scrollbar-width: thin; scrollbar-color: rgb(var(--mute)) transparent; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+      background-color: rgb(var(--bg));
+      background-image:
+        linear-gradient(rgb(var(--grid)) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(var(--grid)) 1px, transparent 1px);
+      background-size: 48px 48px;
+      background-position: -1px -1px;
+      color: rgb(var(--ink));
+    }
+
+    .surface {
+      background: rgb(var(--panel));
+      border: 1px solid rgb(var(--line));
+    }
+
+    .kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.25rem;
+      padding: 0.05rem 0.3rem;
+      border: 1px solid rgb(var(--kbd-border));
+      border-radius: 2px;
+      background: rgb(var(--kbd-bg));
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-size: 0.65rem;
+      font-weight: 500;
+      line-height: 1.3;
+      color: rgb(var(--mute));
+    }
+
+    .field {
+      width: 100%;
+      border: 1px solid rgb(var(--line));
+      border-radius: 2px;
+      background: rgb(var(--field-bg));
+      color: rgb(var(--ink));
+      padding: 0.55rem 0.7rem;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 150ms ease, box-shadow 150ms ease;
+    }
+    .field:focus {
+      border-color: rgb(var(--ink));
+      box-shadow: 0 0 0 1px rgb(var(--ink));
+    }
+    .field option { background: rgb(var(--panel)); color: rgb(var(--ink)); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      height: 2.25rem;
+      padding: 0 0.85rem;
+      border: 1px solid rgb(var(--brand));
+      border-radius: 2px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+    }
+    .btn-primary {
+      background: rgb(var(--brand));
+      color: rgb(var(--panel));
+    }
+    html.dark .btn-primary { color: #0A0A0A; }
+    .btn-primary:hover { background: rgb(var(--brand-hover)); }
+    .btn-ghost {
+      background: rgb(var(--panel));
+      color: rgb(var(--mute));
+      border-color: rgb(var(--line));
+    }
+    .btn-ghost:hover { color: rgb(var(--ink)); border-color: rgb(var(--mute)); }
+    .btn-icon {
+      width: 2.25rem;
+      padding: 0;
+      background: rgb(var(--panel));
+      color: rgb(var(--mute));
+      border-color: rgb(var(--line));
+    }
+    .btn-icon:hover { color: rgb(var(--ink)); border-color: rgb(var(--mute)); }
+
+    .task-row[aria-selected="true"] {
+      background: rgb(var(--selection));
+      box-shadow: inset 3px 0 0 rgb(var(--signal));
+    }
+
+    .project-item { border-left: 3px solid transparent; }
+    .project-item[aria-current="true"] {
+      background: rgb(var(--soft));
+      border-left-color: rgb(var(--ink));
+      font-weight: 600;
+    }
+
+    .dialog-backdrop { background: rgb(var(--backdrop) / 0.55); }
+
+    .status-todo { color: rgb(var(--todo)); }
+    .status-doing { color: rgb(var(--signal)); }
+    .status-done { color: rgb(var(--ok)); }
+
+    .label {
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-size: 0.65rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: rgb(var(--mute));
+    }
+
+    a.skip {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      z-index: 100;
+      padding: 0.5rem 0.75rem;
+      background: rgb(var(--brand));
+      color: rgb(var(--panel));
+    }
+    a.skip:focus { left: 0.5rem; top: 0.5rem; }
+
+    html.dark .btn-primary .kbd {
+      background: rgb(10 10 10 / 0.12) !important;
+      border-color: rgb(10 10 10 / 0.2) !important;
+      color: #0A0A0A !important;
+    }
+
+    #icon-sun { display: none; }
+    html.dark #icon-sun { display: block; }
+    html.dark #icon-moon { display: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to tasks</a>
+
+  <div class="h-full flex flex-col overflow-hidden">
+    <header class="sticky top-0 z-30 bg-panel border-b border-line shrink-0">
+      <div class="mx-auto max-w-[1280px] px-4 sm:px-6 h-11 flex items-center gap-3">
+        <div class="flex items-center gap-2.5 shrink-0">
+          <img src="{{ url_for('static', filename='favicon.svg') }}" alt="" width="28" height="28" class="size-7" />
+          <div class="leading-none">
+            <div class="text-sm font-semibold tracking-tight">PMS</div>
+            <div class="font-mono text-[10px] text-mute tracking-wide hidden sm:block">LOCAL · SQLITE</div>
+          </div>
+        </div>
+
+        <div class="flex-1 max-w-lg mx-auto relative">
+          <label class="sr-only" for="search">Search tasks</label>
+          <div class="relative">
+            <svg class="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input id="search" type="search" placeholder="Search tasks" autocomplete="off"
+              class="field !h-9 !pl-9 !pr-10 !rounded-[2px]" />
+            <span class="absolute right-2.5 top-1/2 -translate-y-1/2 hidden sm:inline-flex"><span class="kbd">/</span></span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="btn-export" type="button" title="Export projects" class="btn btn-icon" aria-label="Export">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          </button>
+          <button id="btn-theme" type="button" title="Toggle dark mode" class="btn btn-icon" aria-label="Toggle dark mode">
+            <svg id="icon-moon" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 14.3A8.4 8.4 0 0 1 9.7 3 7 7 0 1 0 21 14.3Z"/></svg>
+            <svg id="icon-sun" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          </button>
+          <button id="btn-help" type="button" title="Keyboard shortcuts (?)" class="btn btn-icon" aria-label="Help">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.7 2.2c-.7.4-1.2.9-1.2 1.8"/><circle cx="12" cy="17" r=".8" fill="currentColor"/></svg>
+          </button>
+          <button id="btn-new-task" type="button" class="btn btn-primary">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            <span class="hidden sm:inline">New task</span>
+            <span class="kbd !bg-white/15 !border-white/20 !text-white hidden md:inline-flex">N</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main id="main" class="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden mx-auto w-full max-w-[1280px] px-4 sm:px-6 pt-2 pb-2 grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-3 lg:h-full">
+      <aside class="lg:self-start space-y-2 max-h-full overflow-y-auto">
+        <div class="surface p-2">
+          <div class="flex items-center justify-between px-2 h-7 mb-0.5">
+            <h2 class="label">Projects</h2>
+            <button id="btn-new-project" type="button" title="New project (P)"
+              class="cursor-pointer size-6 text-mute hover:text-ink transition grid place-items-center" aria-label="New project">
+              <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </div>
+
+          <button type="button" data-project-filter="all" class="project-item cursor-pointer w-full text-left px-2 py-1.5 text-sm hover:bg-soft transition flex items-center justify-between gap-2" aria-current="true">
+            <span class="flex items-center gap-2 min-w-0">
+              <span class="project-icon shrink-0 inline-grid place-items-center size-6 border border-line bg-soft text-ink">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M3 8.5h18v10.2A1.8 1.8 0 0 1 19.2 20.5H4.8A1.8 1.8 0 0 1 3 18.7V8.5Z" fill="currentColor" opacity="0.85"/>
+                  <path d="M3 8.2A1.7 1.7 0 0 1 4.7 6.5h3.2c.4 0 .7.2.9.5L9.8 8.2H20.3c.4 0 .7.3.7.7V9.5H3V8.2Z" fill="currentColor"/>
+                </svg>
+              </span>
+              <span class="truncate">All</span>
+            </span>
+            <span id="all-count" class="font-mono text-[11px] text-mute tabular-nums">0</span>
+          </button>
+
+          <div id="project-list" class="mt-0.5 max-h-[40vh] overflow-y-auto"></div>
+        </div>
+
+        <div class="surface p-2.5 hidden sm:block">
+          <p class="label mb-1.5">Keys</p>
+          <ul class="space-y-1.5 text-xs text-mute">
+            <li class="flex items-center justify-between gap-2"><span>Export</span><span class="font-mono text-[10px]">ZIP</span></li>
+            <li class="flex items-center justify-between gap-2"><span>Dark mode</span><span class="font-mono text-[10px]">UI</span></li>
+            <li class="flex items-center justify-between gap-2"><span>New task</span><span class="kbd">N</span></li>
+            <li class="flex items-center justify-between gap-2"><span>New project</span><span class="kbd">P</span></li>
+            <li class="flex items-center justify-between gap-2"><span>Commands</span><span class="inline-flex gap-1"><span class="kbd">Ctrl</span><span class="kbd">K</span></span></li>
+            <li class="flex items-center justify-between gap-2"><span>Move</span><span class="inline-flex gap-1"><span class="kbd">J</span><span class="kbd">K</span></span></li>
+          </ul>
+        </div>
+      </aside>
+
+      <section class="min-w-0 min-h-0 flex flex-col overflow-hidden">
+        <div class="flex flex-wrap items-end justify-between gap-2 mb-2 shrink-0">
+          <div>
+            <h1 id="view-title" class="text-lg font-semibold tracking-tight text-ink">All projects</h1>
+            <p id="view-subtitle" class="text-xs text-mute mt-0.5">Press N to add a task.</p>
+          </div>
+          <div class="inline-flex border border-line bg-panel" role="tablist" aria-label="Status filter">
+            <button type="button" data-status-filter="all" class="status-filter cursor-pointer px-3 h-8 text-xs font-semibold bg-ink text-panel transition-colors duration-150">All</button>
+            <button type="button" data-status-filter="todo" class="status-filter cursor-pointer px-3 h-8 text-xs font-semibold text-mute hover:text-ink border-l border-line transition-colors duration-150">Todo</button>
+            <button type="button" data-status-filter="doing" class="status-filter cursor-pointer px-3 h-8 text-xs font-semibold text-mute hover:text-ink border-l border-line transition-colors duration-150">Doing</button>
+            <button type="button" data-status-filter="done" class="status-filter cursor-pointer px-3 h-8 text-xs font-semibold text-mute hover:text-ink border-l border-line transition-colors duration-150">Done</button>
+          </div>
+        </div>
+
+        <div class="surface overflow-hidden flex-1 min-h-0 flex flex-col">
+          <div class="grid grid-cols-[1fr_88px_72px_110px_72px] gap-2 px-3 py-1.5 border-b border-line label bg-soft shrink-0">
+            <div>Task</div>
+            <div class="hidden sm:block">Date</div>
+            <div class="hidden sm:block">Status</div>
+            <div class="hidden md:block">Project</div>
+            <div class="text-right">Edit</div>
+          </div>
+          <div id="task-list" class="divide-y divide-line flex-1 min-h-0 overflow-y-auto"></div>
+          <div id="empty-state" class="hidden px-6 py-10 text-center">
+            <h3 class="text-sm font-semibold text-ink">No tasks</h3>
+            <p class="text-sm text-mute mt-1">Press <span class="kbd">N</span> or create a project first.</p>
+          </div>
+          <div id="pagination" class="hidden border-t border-line px-3 py-1.5 flex flex-wrap items-center justify-between gap-2 bg-soft shrink-0">
+            <p id="pagination-meta" class="font-mono text-[11px] text-mute"></p>
+            <div class="flex items-center gap-1">
+              <button type="button" id="page-prev" class="btn btn-ghost !h-7 !px-2 !text-[11px] disabled:opacity-40 disabled:cursor-not-allowed">Prev</button>
+              <div id="page-numbers" class="flex items-center gap-1"></div>
+              <button type="button" id="page-next" class="btn btn-ghost !h-7 !px-2 !text-[11px] disabled:opacity-40 disabled:cursor-not-allowed">Next</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="task-dialog" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="task-dialog-title">
+    <div class="dialog-backdrop absolute inset-0" data-close="task"></div>
+    <div class="relative mx-auto mt-[8vh] w-[min(520px,calc(100%-1.5rem))] surface overflow-hidden">
+      <form id="task-form" class="p-4 sm:p-5 space-y-3.5">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 id="task-dialog-title" class="text-base font-semibold tracking-tight">New task</h2>
+            <p class="text-xs text-mute mt-0.5 font-mono">Enter save · Esc close</p>
+          </div>
+          <button type="button" data-close="task" class="btn btn-icon !size-8 !h-8" aria-label="Close">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+
+        <input type="hidden" id="task-id" />
+
+        <div>
+          <label for="task-title" class="label block mb-1.5">Title</label>
+          <input id="task-title" required maxlength="200" placeholder="What needs doing?" class="field" />
+        </div>
+
+        <div>
+          <label for="task-description" class="label block mb-1.5">Description</label>
+          <textarea id="task-description" rows="4" maxlength="4000" placeholder="Notes, links, acceptance" class="field resize-y"></textarea>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label for="task-project" class="label block mb-1.5">Project</label>
+            <select id="task-project" required class="field bg-white"></select>
+          </div>
+          <div>
+            <label for="task-status" class="label block mb-1.5">Status</label>
+            <select id="task-status" class="field bg-white">
+              <option value="todo">Todo</option>
+              <option value="doing">Doing</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+          <div>
+            <label for="task-priority" class="label block mb-1.5">Priority</label>
+            <select id="task-priority" class="field bg-white">
+              <option value="0">Normal</option>
+              <option value="1">High</option>
+              <option value="2">Urgent</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between gap-3 pt-1">
+          <button type="button" id="task-delete" class="cursor-pointer hidden h-9 px-2 text-sm font-semibold text-red-700 hover:underline">Delete</button>
+          <div class="flex-1"></div>
+          <button type="button" data-close="task" class="btn btn-ghost">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="project-dialog" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="project-dialog-title">
+    <div class="dialog-backdrop absolute inset-0" data-close="project"></div>
+    <div class="relative mx-auto mt-[12vh] w-[min(460px,calc(100%-1.5rem))] surface overflow-hidden">
+      <form id="project-form" class="p-4 sm:p-5 space-y-3.5">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h2 id="project-dialog-title" class="text-base font-semibold tracking-tight">New project</h2>
+            <p class="text-xs text-mute mt-0.5 font-mono">Enter save · Esc close</p>
+          </div>
+          <button type="button" data-close="project" class="btn btn-icon !size-8 !h-8" aria-label="Close">
+            <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>
+          </button>
+        </div>
+
+        <input type="hidden" id="project-id" />
+
+        <div>
+          <label for="project-name" class="label block mb-1.5">Name</label>
+          <input id="project-name" required maxlength="120" placeholder="Website redesign" class="field" />
+        </div>
+
+        <div>
+          <label for="project-description" class="label block mb-1.5">Description</label>
+          <textarea id="project-description" rows="3" maxlength="2000" placeholder="Optional context" class="field resize-y"></textarea>
+        </div>
+
+        <div>
+          <label class="label block mb-1.5">Color</label>
+          <div id="color-options" class="flex flex-wrap gap-2"></div>
+          <input type="hidden" id="project-color" value="#0057FF" />
+        </div>
+
+        <div class="flex items-center justify-between gap-3 pt-1">
+          <button type="button" id="project-delete" class="cursor-pointer hidden h-9 px-2 text-sm font-semibold text-red-700 hover:underline">Delete</button>
+          <div class="flex-1"></div>
+          <button type="button" data-close="project" class="btn btn-ghost">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="command-dialog" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-label="Command menu">
+    <div class="dialog-backdrop absolute inset-0" data-close="command"></div>
+    <div class="relative mx-auto mt-[12vh] w-[min(480px,calc(100%-1.5rem))] surface overflow-hidden">
+      <div class="border-b border-line p-2.5">
+        <input id="command-input" type="text" placeholder="Type a command" autocomplete="off" class="field" />
+      </div>
+      <div id="command-list" class="max-h-72 overflow-y-auto p-1.5"></div>
+    </div>
+  </div>
+
+  <div id="help-dialog" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="dialog-backdrop absolute inset-0" data-close="help"></div>
+    <div class="relative mx-auto mt-[10vh] w-[min(480px,calc(100%-1.5rem))] surface overflow-hidden p-4 sm:p-5">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <h2 id="help-title" class="text-base font-semibold tracking-tight">Shortcuts</h2>
+          <p class="text-xs text-mute font-mono mt-0.5">Keyboard first</p>
+        </div>
+        <button type="button" data-close="help" class="btn btn-icon !size-8 !h-8" aria-label="Close">
+          <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        </button>
+      </div>
+      <dl class="grid grid-cols-1 text-sm">
+        <div class="flex items-center justify-between gap-3 py-2 border-b border-line"><dt>Export all projects</dt><dd class="font-mono text-[11px] text-mute">ZIP / MD</dd></div>
+        <div class="flex items-center justify-between gap-3 py-2 border-b border-line"><dt>Toggle dark mode</dt><dd class="font-mono text-[11px] text-mute">header</dd></div>
+        <div class="flex items-center justify-between gap-3 py-2 border-b border-line"><dt>New task</dt><dd><span class="kbd">N</span></dd></div>
+        <div class="flex items-center justify-between gap-3 py-2 border-b border-line"><dt>New project</dt><dd><span class="kbd">P</span></dd></div>
+        <div class="flex items-center justify-between gap-3 py-2 border-b border-line"><dt>Command menu</dt><dd class="inline-flex gap-1"><span class="kbd">Ctrl</span><span class="kbd">K</span></dd></div>
+        <div class="flex items-center justify-between gap-3 py-2 border-b border-line"><dt>Search</dt><dd><span class="kbd">/</span></dd></div>
+        <div class="flex items-center justify-between gap-3 py-2 border-b border-line"><dt>Select task</dt><dd class="inline-flex gap-1"><span class="kbd">J</span><span class="kbd">K</span></dd></div>
+        <div class="flex items-center justify-between gap-3 py-2 border-b border-line"><dt>Open / edit</dt><dd><span class="kbd">Enter</span></dd></div>
+        <div class="flex items-center justify-between gap-3 py-2 border-b border-line"><dt>Status Todo / Doing / Done</dt><dd class="inline-flex gap-1"><span class="kbd">1</span><span class="kbd">2</span><span class="kbd">3</span></dd></div>
+        <div class="flex items-center justify-between gap-3 py-2 border-b border-line"><dt>Delete task</dt><dd><span class="kbd">Del</span></dd></div>
+        <div class="flex items-center justify-between gap-3 py-2"><dt>Close / help</dt><dd class="inline-flex gap-1"><span class="kbd">Esc</span><span class="kbd">?</span></dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <div id="toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-[60] hidden px-3 py-2 border border-black bg-black text-white text-sm font-medium dark:border-white dark:bg-white dark:text-black"></div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
